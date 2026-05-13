@@ -295,43 +295,11 @@ async function postToSlack(webhookUrl, text) {
   }
 }
 
-// 获取当前在 Muskogee(America/Chicago) 时区下的小时数
-// 用 Intl.DateTimeFormat 自动处理夏令时切换,无需写死偏移量
-function getMuskogeeHour() {
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: TIMEZONE,
-    hour: "numeric",
-    hour12: false
-  });
-  // formatToParts 返回 [{type:'hour', value:'7'}, ...]
-  const parts = fmt.formatToParts(new Date());
-  const hourPart = parts.find((p) => p.type === "hour");
-  // 注意: en-US 在午夜可能返回 "24" 而不是 "0",需要 mod 24
-  return parseInt(hourPart.value, 10) % 24;
-}
-
 // 主入口
 async function main() {
   if (!SLACK_WEBHOOK_URL) {
     console.error("缺少环境变量 SLACK_WEBHOOK_URL");
     process.exit(1);
-  }
-
-  // 时区检查: 只在 Muskogee 当地 7 点(允许 ±0 小时容差)才真正推送
-  // GitHub Actions 设了两条 cron(UTC 12 / UTC 13),分别覆盖夏令时和冬令时
-  // 不匹配的那条会在这里被拦下来
-  // 手动触发时(workflow_dispatch),FORCE_RUN=1 跳过此检查方便测试
-  if (!process.env.FORCE_RUN) {
-    const localHour = getMuskogeeHour();
-    if (localHour !== 7) {
-      console.log(
-        `当前 Muskogee 时区是 ${localHour} 点,不是 7 点,跳过本次执行(这是 cron 双触发的预期行为)`
-      );
-      return;
-    }
-    console.log(`Muskogee 当地时间 7 点,开始推送`);
-  } else {
-    console.log("FORCE_RUN=1,跳过时区检查");
   }
 
   console.log("[1/3] 获取 Open-Meteo 天气数据...");
