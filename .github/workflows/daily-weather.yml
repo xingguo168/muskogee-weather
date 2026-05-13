@@ -1,13 +1,10 @@
 name: Daily Weather Push
 
 on:
-  # 设两条 cron,脚本会自己判断当前是不是 Muskogee 当地早 7:00,不是就跳过
-  # 夏令时(3月第二个周日 ~ 11月第一个周日,Muskogee=UTC-5): UTC 12:00 = 当地 7:00 ✓
-  # 冬令时(其余时间, Muskogee=UTC-6):                       UTC 13:00 = 当地 7:00 ✓
+  # 每天 UTC 12:00 触发 = Muskogee 夏令时早上 7:00
+  # 11月起冬令时, 把下面的 "0 12" 改成 "0 13" 即可恢复到 7:00
   schedule:
     - cron: "0 12 * * *"
-    - cron: "0 13 * * *"
-  # 也支持手动触发(在 Actions 页面点 Run workflow 按钮)
   workflow_dispatch: {}
 
 jobs:
@@ -26,6 +23,4 @@ jobs:
       - name: Push weather to Slack
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          # 手动触发时强制运行(忽略时区检查),方便测试
-          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
         run: node push.js
